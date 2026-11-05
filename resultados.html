@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Resultados · Lectura de la mirada · ESIC University</title>
+<link rel="icon" href="img/logo-esic-azul.png">
+<link rel="stylesheet" href="css/estilos.css">
+<script src="js/chart.umd.js"></script>
+<style>main{max-width:1000px}</style>
+</head>
+<body>
+<header class="cabecera">
+  <img src="img/logo-esic-blanco.png" alt="ESIC University">
+  <div class="sep"></div>
+  <div class="asig"><span id="asig"></span><small>Resultados del cuasiexperimento · solo para el profesor</small></div>
+</header>
+<div class="franja"></div>
+
+<main>
+  <section class="tarjeta" id="acceso">
+    <div class="paso">Acceso</div>
+    <h2>Resultados de la clase</h2>
+    <label class="campo">Clave de resultados <input type="password" id="clave" style="text-transform:none;letter-spacing:0"></label>
+    <label class="campo">Sesión <input type="text" id="sesion" style="text-transform:none;letter-spacing:0;max-width:320px"></label>
+    <div class="error" id="err"></div>
+    <div class="botones">
+      <button id="btn-cargar">Cargar datos reales</button>
+      <button class="secundario" id="btn-demo">Ver con datos simulados</button>
+      <button class="secundario oculto" id="btn-csv">Descargar CSV</button>
+    </div>
+    <p class="nota" id="aviso-demo"></p>
+  </section>
+
+  <div id="res" class="oculto">
+    <section class="tarjeta panel">
+      <div class="paso">0 · ¿Quién participó?</div>
+      <h2>Participantes</h2>
+      <div class="kpis" id="kpis"></div>
+      <div class="pregunta-debate">¿Perdimos a alguien entre la parte 1 y la 2? ¿Coincide el grupo que declaran con el asignado? ¿Hubo contacto entre grupos? El grupo A esperó fuera unos 20 minutos antes de su actividad y el B hizo la parte 2 antes: ¿qué pudo pasar en ese tiempo? (abandono, contaminación, historia)</div>
+    </section>
+
+    <section class="tarjeta panel">
+      <div class="paso">1 · El resultado principal</div>
+      <h2>Aciertos antes y después, por grupo</h2>
+      <div class="grafico"><canvas id="g-medias"></canvas></div>
+      <table class="t" id="t-desc"></table>
+      <p id="txt-efecto"></p>
+      <div class="pregunta-debate">El grupo de control también cambia del pre al post. ¿Por qué? ¿Qué nos habría hecho creer el grupo A si no tuviéramos grupo B?</div>
+    </section>
+
+    <section class="tarjeta panel">
+      <div class="paso">2 · Persona a persona</div>
+      <h2>Trayectorias individuales</h2>
+      <div class="grafico"><canvas id="g-indiv"></canvas></div>
+    </section>
+
+    <section class="tarjeta panel">
+      <div class="paso">3 · ¿Partían del mismo punto?</div>
+      <h2>Pretest por grupo (antes de cualquier actividad)</h2>
+      <div class="grafico" style="height:260px"><canvas id="g-pre"></canvas></div>
+      <p id="txt-pre"></p>
+      <div class="pregunta-debate">Nadie ha recibido nada todavía. Si los grupos ya difieren, ¿de dónde sale la diferencia? (selección: os sentasteis donde quisisteis)</div>
+    </section>
+
+    <section class="tarjeta panel">
+      <div class="paso">4 · Regresión a la media</div>
+      <h2>Cambio según cómo le fue a cada persona en el pretest</h2>
+      <div class="grafico" style="height:280px"><canvas id="g-rm"></canvas></div>
+      <div class="pregunta-debate">¿Quién «mejora» más: quien puntuó bajo o alto en el pretest? ¿Pasa en los dos grupos? ¿Qué implica para un programa que se aplica solo a quien puntúa peor?</div>
+    </section>
+
+    <section class="tarjeta panel">
+      <div class="paso">5 · Comparaciones sin manipulación (ex post facto)</div>
+      <h2>Pretest por zona del aula y por sexo</h2>
+      <table class="t" id="t-expf"></table>
+      <div class="pregunta-debate">Aquí nadie ha manipulado nada. ¿Podemos concluir que sentarse delante o detrás, o ser mujer u hombre, <em>causa</em> una puntuación distinta? ¿En qué se diferencia del resultado del apartado 1?</div>
+    </section>
+  </div>
+</main>
+
+<script src="js/config.js"></script>
+<script>
+(function () {
+  const C = window.CONFIG, $ = s => document.querySelector(s);
+  $("#asig").textContent = C.ASIGNATURA;
+  $("#sesion").value = C.SESION;
+  const AZUL = "#0047E8", NAR = "#FF9606", MAR = "#001447";
+  const COL = { A: NAR, B: AZUL };
+  let filas = [], graficos = [];
+
+  /* ---------- Estadística básica ---------- */
+  const media = a => a.reduce((s, x) => s + x, 0) / a.length;
+  const de = a => { if (a.length < 2) return NaN; const m = media(a); return Math.sqrt(a.reduce((s, x) => s + (x - m) ** 2, 0) / (a.length - 1)); };
+  const f2 = x => isFinite(x) ? x.toFixed(2).replace(".", ",") : "—";
+  const fp = p => !isFinite(p) ? "—" : p < .001 ? "< ,001" : "= " + p.toFixed(3).replace("0.", ",");
+  function betacf(a, b, x) { let qab = a + b, qap = a + 1, qam = a - 1, c = 1, d = 1 - qab * x / qap; d = 1 / (Math.abs(d) < 1e-30 ? 1e-30 : d); let h = d;
+    for (let m = 1; m <= 200; m++) { const m2 = 2 * m; let aa = m * (b - m) * x / ((qam + m2) * (a + m2)); d = 1 + aa * d; d = 1 / (Math.abs(d) < 1e-30 ? 1e-30 : d); c = 1 + aa / c; h *= d * c;
+      aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2)); d = 1 + aa * d; d = 1 / (Math.abs(d) < 1e-30 ? 1e-30 : d); c = 1 + aa / c; const del = d * c; h *= del; if (Math.abs(del - 1) < 3e-12) break; } return h; }
+  function lgamma(z) { const g = [76.18009172947146, -86.50532032941677, 24.01409824083091, -1.231739572450155, .1208650973866179e-2, -.5395239384953e-5];
+    let x = z, y = z, t = x + 5.5; t -= (x + .5) * Math.log(t); let s = 1.000000000190015; for (const c of g) s += c / ++y; return -t + Math.log(2.5066282746310005 * s / x); }
+  function ibeta(x, a, b) { if (x <= 0) return 0; if (x >= 1) return 1; const bt = Math.exp(lgamma(a + b) - lgamma(a) - lgamma(b) + a * Math.log(x) + b * Math.log(1 - x));
+    return x < (a + 1) / (a + b + 2) ? bt * betacf(a, b, x) / a : 1 - bt * betacf(b, a, 1 - x) / b; }
+  const pT = (t, gl) => ibeta(gl / (gl + t * t), gl / 2, .5);   // bilateral
+  function welch(a, b) { const va = de(a) ** 2 / a.length, vb = de(b) ** 2 / b.length, t = (media(a) - media(b)) / Math.sqrt(va + vb);
+    const gl = (va + vb) ** 2 / (va ** 2 / (a.length - 1) + vb ** 2 / (b.length - 1)); return { t, gl, p: pT(t, gl) }; }
+  function dCohen(a, b) { const sp = Math.sqrt(((a.length - 1) * de(a) ** 2 + (b.length - 1) * de(b) ** 2) / (a.length + b.length - 2)); return (media(a) - media(b)) / sp; }
+  /* ANCOVA: post = b0 + b1·pre + b2·(grupo A) */
+  function ancova(fs) {
+    const X = fs.map(f => [1, f.pre, f.grupo === "A" ? 1 : 0]), y = fs.map(f => f.post), n = fs.length, k = 3;
+    if (n <= k + 1) return null;
+    const XtX = [0, 1, 2].map(i => [0, 1, 2].map(j => X.reduce((s, r) => s + r[i] * r[j], 0)));
+    const Xty = [0, 1, 2].map(i => X.reduce((s, r, q) => s + r[i] * y[q], 0));
+    const inv = inv3(XtX); if (!inv) return null;
+    const b = inv.map(r => r.reduce((s, v, j) => s + v * Xty[j], 0));
+    const sse = X.reduce((s, r, q) => s + (y[q] - (b[0] + b[1] * r[1] + b[2] * r[2])) ** 2, 0);
+    const s2 = sse / (n - k), se = Math.sqrt(s2 * inv[2][2]), t = b[2] / se;
+    return { b: b[2], se, t, gl: n - k, p: pT(t, n - k), mediaPre: media(fs.map(f => f.pre)), b0: b[0], b1: b[1] };
+  }
+  function inv3(m) { const [a, b, c] = m[0], [d, e, f] = m[1], [g, h, i] = m[2];
+    const A = e * i - f * h, B = -(d * i - f * g), Cc = d * h - e * g, det = a * A + b * B + c * Cc; if (Math.abs(det) < 1e-12) return null;
+    return [[A, -(b * i - c * h), b * f - c * e], [B, a * i - c * g, -(a * f - c * d)], [Cc, -(a * h - b * g), a * e - b * d]].map(r => r.map(v => v / det)); }
+
+  /* ---------- Carga ---------- */
+  $("#btn-cargar").addEventListener("click", async () => {
+    $("#err").textContent = "";
+    if (!C.ENDPOINT) { $("#err").textContent = "Falta la URL de la hoja (ENDPOINT en js/config.js). Puedes ver la página con datos simulados."; return; }
+    try {
+      const r = await fetch(`${C.ENDPOINT}?accion=datos&clave=${encodeURIComponent($("#clave").value)}&sesion=${encodeURIComponent($("#sesion").value.trim())}`);
+      const j = await r.json();
+      if (j.error) { $("#err").textContent = j.error; return; }
+      $("#aviso-demo").textContent = `Datos reales cargados: ${new Date().toLocaleTimeString("es-ES")}. Pulsa de nuevo para actualizar.`;
+      unir(j.pre, j.post);
+    } catch (e) { $("#err").textContent = "No se pudo conectar con la hoja: " + e.message; }
+  });
+  $("#btn-demo").addEventListener("click", () => {
+    $("#aviso-demo").textContent = "⚠ DATOS SIMULADOS (no son de la clase). Sirven para ensayar la explicación.";
+    const d = simular(); unir(d.pre, d.post);
+  });
+  $("#btn-csv").addEventListener("click", () => {
+    const cab = ["codigo", "grupo", "grupo_declarado", "lado", "zona", "fila_global", "sexo", "pre", "post", "ganancia", "hablo_otro_grupo"];
+    const csv = [cab.join(";")].concat(filas.map(f => cab.map(k => f[k] ?? "").join(";"))).join("\n");
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv" }));
+    a.download = "cuasiexperimento_IE.csv"; a.click();
+  });
+
+  function unir(pre, post) {
+    const ult = l => { const m = {}; (l || []).forEach(f => m[String(f.codigo).toUpperCase()] = f); return m; };
+    const P = ult(pre), Q = ult(post);
+    const cods = [...new Set(Object.keys(P).concat(Object.keys(Q)))];
+    const todas = cods.map(c => {
+      const a = P[c] || {}, b = Q[c] || {};
+      const vpre = a.aciertos_pre === "" || a.aciertos_pre == null ? null : Number(a.aciertos_pre);
+      const vpost = b.aciertos_post === "" || b.aciertos_post == null ? null : Number(b.aciertos_post);
+      return { codigo: c, grupo: a.grupo_asignado || b.grupo_declarado || "", grupo_declarado: b.grupo_declarado || "",
+        lado: a.lado || "", zona: a.zona || "", fila_global: a.fila_global || "", sexo: a.sexo || "",
+        pre: vpre, post: vpost, ganancia: vpre != null && vpost != null ? vpost - vpre : null, hablo_otro_grupo: b.hablo_otro_grupo || "" };
+    });
+    filas = todas;
+    pintar(todas);
+  }
+
+  /* ---------- Pintar ---------- */
+  function pintar(todas) {
+    graficos.forEach(g => g.destroy()); graficos = [];
+    $("#res").classList.remove("oculto"); $("#btn-csv").classList.remove("oculto");
+    const comp = todas.filter(f => f.pre != null && f.post != null && (f.grupo === "A" || f.grupo === "B"));
+    const G = g => comp.filter(f => f.grupo === g);
+    const nPre = todas.filter(f => f.pre != null).length, nPost = todas.filter(f => f.post != null).length;
+    const noCoinc = todas.filter(f => f.grupo_declarado && f.grupo && f.grupo_declarado !== f.grupo).length;
+    const hablo = todas.filter(f => f.hablo_otro_grupo === "si").length;
+    $("#kpis").innerHTML = [[nPre, "hicieron la parte 1"], [nPost, "hicieron la parte 2"], [comp.length, "con las dos partes"],
+      [G("A").length + " / " + G("B").length, "grupo A / grupo B"], [nPre - todas.filter(f => f.pre != null && f.post != null).length, "sin parte 2 (abandono)"],
+      [noCoinc, "declaran otro grupo"], [hablo, "hablaron con el otro grupo"]]
+      .map(([v, t]) => `<div class="kpi"><b>${v}</b><span>${t}</span></div>`).join("");
+
+    const etq = g => C.ETIQUETAS[g] || "Grupo " + g;
+    // 1. Medias
+    const ds = ["A", "B"].map(g => ({ label: etq(g), data: [media(G(g).map(f => f.pre)), media(G(g).map(f => f.post))],
+      borderColor: COL[g], backgroundColor: COL[g], borderWidth: 4, pointRadius: 7, tension: 0 }));
+    graficos.push(new Chart($("#g-medias"), { type: "line", data: { labels: ["Pretest (forma A)", "Postest (forma B)"], datasets: ds },
+      options: (() => { const o = opc("Aciertos (de 18)"), v = ds.flatMap(d => d.data).filter(isFinite);
+        o.scales.y.min = Math.max(0, Math.floor(Math.min(...v)) - 3); o.scales.y.max = Math.min(18, Math.ceil(Math.max(...v)) + 3); return o; })() }));
+    $("#t-desc").innerHTML = `<tr><th>Grupo</th><th>n</th><th>Pre M (DE)</th><th>Post M (DE)</th><th>Cambio M (DE)</th></tr>` +
+      ["A", "B"].map(g => { const x = G(g); return `<tr><td>${etq(g)}</td><td>${x.length}</td><td>${f2(media(x.map(f => f.pre)))} (${f2(de(x.map(f => f.pre)))})</td><td>${f2(media(x.map(f => f.post)))} (${f2(de(x.map(f => f.post)))})</td><td>${f2(media(x.map(f => f.ganancia)))} (${f2(de(x.map(f => f.ganancia)))})</td></tr>`; }).join("");
+    const ga = G("A").map(f => f.ganancia), gb = G("B").map(f => f.ganancia);
+    if (ga.length >= 2 && gb.length >= 2) {
+      const w = welch(ga, gb), dd = dCohen(ga, gb), an = ancova(comp);
+      $("#txt-efecto").innerHTML = `<strong>Diferencia de cambios (A − B):</strong> ${f2(media(ga) - media(gb))} aciertos; t de Welch(${f2(w.gl)}) = ${f2(w.t)}, p ${fp(w.p)}, d = ${f2(dd)}.` +
+        (an ? `<br><strong>ANCOVA</strong> (postest controlando el pretest): efecto del grupo A = ${f2(an.b)} aciertos, t(${an.gl}) = ${f2(an.t)}, p ${fp(an.p)}.` : "") +
+        `<br><span class="nota">Con tan pocas personas por grupo, que p no sea significativa no demuestra que el entrenamiento no funcione: la potencia es muy baja.</span>`;
+    } else $("#txt-efecto").textContent = "Faltan datos: se necesitan al menos 2 personas por grupo con las dos partes.";
+
+    // 2. Individuales
+    graficos.push(new Chart($("#g-indiv"), { type: "line", data: { labels: ["Pretest", "Postest"],
+      datasets: comp.map(f => ({ label: f.grupo, data: [f.pre + jit(f.codigo), f.post + jit(f.codigo + "x")], borderColor: COL[f.grupo] + "AA", backgroundColor: COL[f.grupo], borderWidth: 2, pointRadius: 4 })) },
+      options: Object.assign(opc("Aciertos (de 18)"), { plugins: { legend: { display: false }, tooltip: { enabled: false } } }) }));
+
+    // 3. Pretest por grupo (todos los que hicieron el pre)
+    const preG = g => todas.filter(f => f.pre != null && f.grupo === g).map(f => f.pre);
+    graficos.push(new Chart($("#g-pre"), { type: "scatter",
+      data: { datasets: ["A", "B"].map((g, i) => ({ label: etq(g), data: preG(g).map(v => ({ x: i + (Math.random() - .5) * .3, y: v })), backgroundColor: COL[g], pointRadius: 7 }))
+        .concat(["A", "B"].map((g, i) => ({ label: "Media " + g, type: "line", data: [{ x: i - .3, y: media(preG(g)) }, { x: i + .3, y: media(preG(g)) }], borderColor: MAR, borderWidth: 3, pointRadius: 0 }))) },
+      options: { maintainAspectRatio: false, plugins: { legend: { labels: { filter: it => !it.text.startsWith("Media") } } },
+        scales: { x: { min: -.6, max: 1.6, ticks: { callback: v => v === 0 ? "Grupo A" : v === 1 ? "Grupo B" : "" , stepSize: 1 } }, y: { title: { display: true, text: "Aciertos pretest" }, suggestedMin: 5, suggestedMax: 18 } } } }));
+    const pa = preG("A"), pb = preG("B");
+    if (pa.length >= 2 && pb.length >= 2) { const w = welch(pa, pb);
+      $("#txt-pre").innerHTML = `Pretest: A = ${f2(media(pa))}, B = ${f2(media(pb))}; diferencia = ${f2(media(pa) - media(pb))}, t(${f2(w.gl)}) = ${f2(w.t)}, p ${fp(w.p)}, d = ${f2(dCohen(pa, pb))}.`; }
+
+    // 4. Regresión a la media: terciles del pretest (de toda la muestra emparejada)
+    const orden = comp.map(f => f.pre).sort((a, b) => a - b);
+    const q1 = orden[Math.floor(orden.length / 3)], q2 = orden[Math.floor(2 * orden.length / 3)];
+    const ter = f => f.pre < q1 ? 0 : f.pre < q2 ? 1 : 2;
+    const etT = ["Pretest bajo", "Pretest medio", "Pretest alto"];
+    graficos.push(new Chart($("#g-rm"), { type: "bar", data: { labels: etT,
+      datasets: ["A", "B"].map(g => ({ label: etq(g), backgroundColor: COL[g], data: [0, 1, 2].map(t => { const x = G(g).filter(f => ter(f) === t).map(f => f.ganancia); return x.length ? media(x) : null; }) })) },
+      options: opc("Cambio medio (post − pre)") }));
+
+    // 5. Ex post facto
+    const fila = (et, x) => `<tr><td>${et}</td><td>${x.length}</td><td>${x.length ? f2(media(x)) : "—"}</td><td>${x.length > 1 ? f2(de(x)) : "—"}</td></tr>`;
+    const pv = (k, v) => todas.filter(f => f.pre != null && f[k] === v).map(f => f.pre);
+    $("#t-expf").innerHTML = `<tr><th>Comparación</th><th>n</th><th>Pretest M</th><th>DE</th></tr>` +
+      fila("Filas 1-2 (delante)", pv("zona", "delante")) + fila("Filas 4-5 (detrás)", pv("zona", "detras")) +
+      fila("Mujeres", pv("sexo", "mujer")) + fila("Hombres", pv("sexo", "hombre"));
+  }
+  function opc(ytxt) { return { maintainAspectRatio: false, plugins: { legend: { position: "bottom" } }, scales: { y: { title: { display: true, text: ytxt } } } }; }
+  function jit(s) { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) % 997; return (h / 997 - .5) * .35; }
+
+  /* ---------- Datos simulados para ensayar ---------- */
+  function simular() {
+    const pre = [], post = [], letras = "ABCDEFGHIJLMNOPRSTV";
+    for (let i = 0; i < 16; i++) {
+      const g = i % 2 ? "B" : "A", hab = (g === "A" ? 11.2 : 12.4) + norm() * 2.1;
+      const cod = letras[i] + letras[(i * 7) % 19] + String(10 + i);
+      const p = clamp(Math.round(hab + norm() * 1.6)), q = clamp(Math.round(hab + .8 + (g === "A" ? 1.4 : 0) + norm() * 1.6));
+      pre.push({ codigo: cod, grupo_asignado: g, lado: g === "A" ? "izquierda" : "derecha", zona: ["delante", "medio", "detras"][i % 3], sexo: i % 4 ? "mujer" : "hombre", aciertos_pre: p });
+      if (i !== 5) post.push({ codigo: cod, grupo_declarado: i === 9 ? "A" : g, hablo_otro_grupo: i === 3 ? "si" : "no", aciertos_post: q });
+    }
+    return { pre, post };
+  }
+  function norm() { return Math.sqrt(-2 * Math.log(Math.random() || 1e-9)) * Math.cos(2 * Math.PI * Math.random()); }
+  function clamp(v) { return Math.max(0, Math.min(18, v)); }
+})();
+</script>
+</body>
+</html>

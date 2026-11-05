@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Lectura de la mirada · Parte 2 · ESIC University</title>
+<link rel="icon" href="img/logo-esic-azul.png">
+<link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+<header class="cabecera">
+  <img src="img/logo-esic-blanco.png" alt="ESIC University">
+  <div class="sep"></div>
+  <div class="asig"><span id="asig"></span><small id="tema"></small></div>
+</header>
+<div class="franja"></div>
+
+<main>
+  <!-- 1. BIENVENIDA + CÓDIGO + GRUPO -->
+  <section id="p-inicio" class="pantalla activa tarjeta">
+    <div class="prueba-aviso modo-prueba oculto">Modo prueba: falta configurar la hoja de datos. Nada de lo que respondas se enviará.</div>
+    <div class="paso">Parte 2 de 2</div>
+    <h1>Segunda parte</h1>
+    <p>Esta parte es muy parecida a la primera y dura unos <strong>6 minutos</strong>. Responde por tu cuenta y sin comentar nada con los demás.</p>
+    <label class="campo">Tu código personal (el mismo de la parte 1)
+      <input type="text" id="codigo" maxlength="4" autocomplete="off" autocapitalize="characters" placeholder="ER16"></label>
+    <div class="nota">Inicial del nombre + inicial del primer apellido + día de nacimiento (p. ej., ER16).</div>
+    <div class="error" id="err-codigo"></div>
+    <div class="campo" style="margin-top:18px">¿En qué grupo te colocó la aplicación?</div>
+    <div class="grupo-btns">
+      <button type="button" data-g="A">Grupo A</button>
+      <button type="button" data-g="B">Grupo B</button>
+    </div>
+    <div class="error" id="err-grupo"></div>
+    <div class="botones"><button id="btn-inicio">Continuar →</button></div>
+  </section>
+
+  <!-- 2. INSTRUCCIONES -->
+  <section id="p-instr" class="pantalla tarjeta">
+    <div class="paso">Parte 2</div>
+    <h2>Instrucciones</h2>
+    <p>Igual que antes: verás <strong>18 fotografías nuevas</strong>. Para cada una, toca la palabra que mejor describe lo que la persona está <strong>pensando o sintiendo</strong> y pulsa <em>Siguiente</em>.</p>
+    <p>Fíjate solo en la mirada. No puedes volver atrás.</p>
+    <div class="botones"><button id="btn-empezar">Empezar las fotografías →</button></div>
+  </section>
+
+  <!-- 3. PRUEBA -->
+  <section id="p-prueba" class="pantalla tarjeta"><div id="prueba"></div></section>
+
+  <!-- 4. PREGUNTA FINAL -->
+  <section id="p-final" class="pantalla tarjeta">
+    <div class="paso">Una última pregunta</div>
+    <h2>Mientras estabais separados…</h2>
+    <p>Desde que terminaste la parte 1, ¿has hablado con alguien <strong>del otro grupo</strong> sobre las fotografías o sobre lo que estabais haciendo?</p>
+    <div class="si-no">
+      <button type="button" data-v="no">No</button>
+      <button type="button" data-v="si">Sí</button>
+    </div>
+    <div class="botones"><button id="btn-enviar" disabled>Enviar mis respuestas →</button></div>
+  </section>
+
+  <!-- 5. GRACIAS -->
+  <section id="p-gracias" class="pantalla tarjeta">
+    <div class="grupo">
+      <div class="paso">Has terminado</div>
+      <h1>¡Gracias!</h1>
+      <p id="msg-final"></p>
+      <p class="nota">Al final de la clase veremos juntos los resultados y descubriremos qué estábamos investigando.</p>
+    </div>
+    <div class="estado" id="estado"></div>
+  </section>
+</main>
+
+<script src="js/config.js"></script>
+<script src="js/items.js"></script>
+<script src="js/comun.js"></script>
+<script>
+(function () {
+  const C = window.CONFIG;
+  const D = { id: nuevoId("post"), sesion: C.SESION, fase: "post", forma: "B", fecha_inicio: new Date().toISOString() };
+  let grupo = null, hablo = null;
+
+  const previo = memoria.get("codigo");
+  if (previo) $("#codigo").value = previo;
+
+  document.querySelectorAll(".grupo-btns button").forEach(b => b.addEventListener("click", () => {
+    document.querySelectorAll(".grupo-btns button").forEach(x => x.classList.remove("sel"));
+    b.classList.add("sel"); grupo = b.dataset.g; $("#err-grupo").textContent = "";
+  }));
+
+  $("#btn-inicio").addEventListener("click", () => {
+    const v = normalizarCodigo($("#codigo").value);
+    $("#codigo").value = v;
+    let ok = true;
+    if (!codigoValido(v)) { $("#err-codigo").textContent = "Revisa el formato: dos letras y dos cifras del 01 al 31 (p. ej., ER16)."; ok = false; }
+    else $("#err-codigo").textContent = "";
+    if (!grupo) { $("#err-grupo").textContent = "Elige tu grupo."; ok = false; }
+    if (!ok) return;
+    D.codigo = v; D.grupo_declarado = grupo;
+    mostrar("p-instr");
+  });
+
+  $("#btn-empezar").addEventListener("click", () => {
+    mostrar("p-prueba");
+    Prueba(window.FORMA_B, $("#prueba"), (r) => {
+      D.aciertos_post = r.aciertos; D.n_items = r.n_items; D.duracion_s = r.duracion_s; D.tr_mediana_ms = r.tr_mediana_ms;
+      Object.assign(D, columnasItems(r.detalle));
+      mostrar("p-final");
+    });
+  });
+
+  document.querySelectorAll(".si-no button").forEach(b => b.addEventListener("click", () => {
+    document.querySelectorAll(".si-no button").forEach(x => x.classList.remove("sel"));
+    b.classList.add("sel"); hablo = b.dataset.v; $("#btn-enviar").disabled = false;
+  }));
+
+  $("#btn-enviar").addEventListener("click", () => {
+    D.hablo_otro_grupo = hablo;
+    D.fecha_fin = new Date().toISOString();
+    D.movil = /Mobi|Android|iPhone/i.test(navigator.userAgent) ? 1 : 0;
+    $("#msg-final").textContent = (C.FINAL_PARTE2 || {})[grupo] || "";
+    mostrar("p-gracias");
+    enviar("post", D, pintarEstado($("#estado")));
+  });
+
+  window.addEventListener("beforeunload", e => {
+    if ((memoria.get("cola") || []).length) { e.preventDefault(); e.returnValue = ""; }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Lectura de la mirada · Parte 1 · ESIC University</title>
+<link rel="icon" href="img/logo-esic-azul.png">
+<link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+<header class="cabecera">
+  <img src="img/logo-esic-blanco.png" alt="ESIC University">
+  <div class="sep"></div>
+  <div class="asig"><span id="asig"></span><small id="tema"></small></div>
+</header>
+<div class="franja"></div>
+
+<main>
+  <!-- 1. BIENVENIDA -->
+  <section id="p-bienvenida" class="pantalla activa tarjeta">
+    <div class="prueba-aviso modo-prueba oculto">Modo prueba: falta configurar la hoja de datos. Nada de lo que respondas se enviará.</div>
+    <div class="paso">Parte 1 de 2</div>
+    <h1>¡Bienvenido/a!</h1>
+    <p>Hoy no vas a escuchar hablar de un estudio: vas a formar parte de uno. Durante esta sesión todo el grupo participará en una pequeña investigación y, al final de la clase, analizaremos juntos los datos.</p>
+    <p>Necesitas unos <strong>10 minutos</strong> para esta primera parte. Busca un lugar cómodo, silencia las notificaciones y responde por tu cuenta, sin comentar las respuestas con nadie.</p>
+    <div class="botones"><button onclick="mostrar('p-explicacion')">Empezar →</button></div>
+  </section>
+
+  <!-- 2. EXPLICACIÓN (sin describir variables ni hipótesis) -->
+  <section id="p-explicacion" class="pantalla tarjeta">
+    <div class="paso">Qué vas a hacer</div>
+    <h2>Cómo funciona la actividad</h2>
+    <ul>
+      <li>Verás <strong>18 fotografías</strong> de la zona de los ojos de distintas personas.</li>
+      <li>En cada una elegirás, entre cuatro palabras, la que mejor describe lo que esa persona está <strong>pensando o sintiendo</strong>.</li>
+      <li>Si dudas, elige la que te parezca más adecuada. Puedes consultar el significado de las palabras, pero no hay límite de tiempo ni se muestran las respuestas correctas.</li>
+      <li>Después, la aplicación te indicará qué hacer a continuación. Más tarde, en la misma clase, habrá una <strong>segunda parte</strong> parecida.</li>
+    </ul>
+    <p class="nota">Por razones metodológicas, algunos detalles de la actividad se explicarán al final de la sesión. No es un examen y no cuenta para la nota.</p>
+    <div class="botones">
+      <button class="secundario" onclick="mostrar('p-bienvenida')">← Atrás</button>
+      <button onclick="mostrar('p-consentimiento')">Continuar →</button>
+    </div>
+  </section>
+
+  <!-- 3. CONSENTIMIENTO INFORMADO -->
+  <section id="p-consentimiento" class="pantalla tarjeta">
+    <div class="paso">Antes de empezar</div>
+    <h2>Consentimiento informado</h2>
+    <div class="consent">
+      <p><strong>Finalidad.</strong> Esta actividad tiene una finalidad exclusivamente docente: aprender, con datos reales del grupo, cómo se diseña y se analiza una investigación en Psicología.</p>
+      <p><strong>Voluntariedad.</strong> Participar es voluntario. Puedes no participar o dejarlo en cualquier momento sin dar explicaciones y sin ninguna consecuencia académica. Tus respuestas no influyen en la calificación.</p>
+      <p><strong>Datos.</strong> No se registra tu nombre. Usarás un código personal que solo tú conoces. Se guardan tus respuestas, el tiempo de respuesta, el sexo (opcional) y la zona del aula en la que estás sentado/a.</p>
+      <p><strong>Confidencialidad.</strong> Solo <span id="responsable"></span> tiene acceso a los datos individuales. En clase solo se mostrarán resultados de grupo. Los datos se borrarán al terminar el curso académico.</p>
+      <p><strong>Tus derechos.</strong> Puedes pedir que se eliminen tus datos indicando tu código<span id="contacto"></span>.</p>
+      <p><strong>Riesgos.</strong> La tarea consiste en mirar fotografías y elegir palabras; no se prevén riesgos ni molestias más allá de los de una actividad habitual de clase.</p>
+    </div>
+    <label class="check"><input type="checkbox" id="acepto"> <span>He leído la información, tengo 18 años o más y <strong>acepto participar</strong> voluntariamente.</span></label>
+    <div class="botones">
+      <button id="btn-acepto" disabled>Acepto y continúo →</button>
+      <button class="secundario" id="btn-no">No deseo participar</button>
+    </div>
+  </section>
+
+  <!-- 4. CÓDIGO PERSONAL -->
+  <section id="p-codigo" class="pantalla tarjeta">
+    <div class="paso">Tu código personal</div>
+    <h2>Crea tu código</h2>
+    <p>Lo necesitarás en la segunda parte para unir tus respuestas sin usar tu nombre. Se forma así:</p>
+    <div class="ejemplo"><strong>Inicial de tu nombre + inicial de tu primer apellido + día de tu nacimiento (dos cifras).</strong><br>
+      Ejemplo: <em>Elena Rodríguez</em>, nacida el día <em>16</em> → <strong>ER16</strong>. Nacida el día 3 → <strong>ER03</strong>.</div>
+    <label class="campo">Código
+      <input type="text" id="codigo" maxlength="4" autocomplete="off" autocapitalize="characters" placeholder="ER16"></label>
+    <div class="error" id="err-codigo"></div>
+    <label class="campo">Sexo (opcional)
+      <select id="sexo">
+        <option value="">Prefiero no responder</option>
+        <option value="mujer">Mujer</option>
+        <option value="hombre">Hombre</option>
+        <option value="otro">Otro</option>
+      </select></label>
+    <div class="botones"><button id="btn-codigo">Continuar →</button></div>
+  </section>
+
+  <!-- 5. INSTRUCCIONES DE LA PRUEBA -->
+  <section id="p-instr" class="pantalla tarjeta">
+    <div class="paso">Parte 1</div>
+    <h2>Instrucciones</h2>
+    <p>Para cada fotografía, toca la palabra que mejor describe lo que la persona está <strong>pensando o sintiendo</strong> y pulsa <em>Siguiente</em>.</p>
+    <p>Fíjate solo en la mirada. Si varias palabras te parecen posibles, elige la que mejor encaje. No puedes volver atrás.</p>
+    <div class="botones"><button id="btn-empezar">Empezar las fotografías →</button></div>
+  </section>
+
+  <!-- 6. PRUEBA -->
+  <section id="p-prueba" class="pantalla tarjeta"><div id="prueba"></div></section>
+
+  <!-- 7. ZONA DEL AULA -->
+  <section id="p-aula" class="pantalla tarjeta">
+    <div class="paso" id="paso-aula">Último paso</div>
+    <h2>¿Dónde estás sentado/a?</h2>
+    <p>Toca la fila y el lado en el que estás <strong>ahora mismo</strong>, mirando hacia la pizarra.</p>
+    <div class="aula" id="aula"></div>
+    <div class="leyenda-sel" id="sel-aula"></div>
+    <div class="botones"><button id="btn-aula" disabled>Confirmar mi sitio →</button></div>
+  </section>
+
+  <!-- 8. GRUPO ASIGNADO -->
+  <section id="p-grupo" class="pantalla tarjeta">
+    <div class="grupo">
+      <div class="paso">Tu grupo es el</div>
+      <div class="letra" id="g-letra">A</div>
+      <p><strong>Recuerda la letra:</strong> la necesitarás en la segunda parte.</p>
+      <div class="accion" id="g-accion"></div>
+      <p class="nota" id="g-texto" style="margin-top:14px"></p>
+      <p class="nota">Deja esta página abierta hasta ver «Respuestas guardadas».</p>
+    </div>
+    <div class="estado" id="estado"></div>
+  </section>
+</main>
+
+<script src="js/config.js"></script>
+<script src="js/items.js"></script>
+<script src="js/comun.js"></script>
+<script>
+(function () {
+  const C = window.CONFIG;
+  const D = { id: nuevoId("pre"), sesion: C.SESION, fase: "pre", forma: "A", fecha_inicio: new Date().toISOString() };
+  let consiente = false, sitio = null;
+
+  $("#responsable").textContent = C.RESPONSABLE;
+  if (C.CONTACTO) $("#contacto").textContent = " a " + C.CONTACTO;
+
+  $("#acepto").addEventListener("change", e => $("#btn-acepto").disabled = !e.target.checked);
+  $("#btn-acepto").addEventListener("click", () => { consiente = true; mostrar("p-codigo"); });
+  $("#btn-no").addEventListener("click", () => {
+    consiente = false;
+    $("#paso-aula").textContent = "No se guardará ningún dato tuyo";
+    pintarAula(); mostrar("p-aula");
+  });
+
+  $("#btn-codigo").addEventListener("click", () => {
+    const v = normalizarCodigo($("#codigo").value);
+    $("#codigo").value = v;
+    if (!codigoValido(v)) { $("#err-codigo").textContent = "Revisa el formato: dos letras y dos cifras del 01 al 31 (p. ej., ER16)."; return; }
+    $("#err-codigo").textContent = "";
+    D.codigo = v; D.sexo = $("#sexo").value;
+    memoria.set("codigo", v);
+    mostrar("p-instr");
+  });
+
+  $("#btn-empezar").addEventListener("click", () => {
+    mostrar("p-prueba");
+    Prueba(window.FORMA_A, $("#prueba"), (r) => {
+      D.aciertos_pre = r.aciertos; D.n_items = r.n_items; D.duracion_s = r.duracion_s; D.tr_mediana_ms = r.tr_mediana_ms;
+      Object.assign(D, columnasItems(r.detalle));
+      pintarAula(); mostrar("p-aula");
+    });
+  });
+
+  /* ----- Mapa del aula: 5 filas delanteras (izq/der) + 5 filas de grada ----- */
+  function pintarAula() {
+    const fila = (zona, n) => `
+      <button class="asiento" data-zona="${zona}" data-fila="${n}" data-lado="izquierda">Fila ${n} · izq.</button>
+      <div class="pasillo"></div>
+      <button class="asiento" data-zona="${zona}" data-fila="${n}" data-lado="derecha">Fila ${n} · der.</button>`;
+    let h = `<div class="pizarra">PIZARRA</div><div class="orient"><span>← Izquierda</span><span>Derecha →</span></div>`;
+    h += `<div class="filas">`;
+    for (let i = 1; i <= 5; i++) h += fila("delante", i);
+    h += `</div>`;
+    $("#aula").innerHTML = h;
+    $("#aula").querySelectorAll(".asiento").forEach(b => b.addEventListener("click", () => {
+      $("#aula").querySelectorAll(".asiento").forEach(x => x.classList.remove("sel"));
+      b.classList.add("sel");
+      sitio = { lado: b.dataset.lado, zona: b.dataset.zona, fila: Number(b.dataset.fila) };
+      $("#sel-aula").textContent = `Fila ${sitio.fila} · lado ${sitio.lado}`;
+      $("#btn-aula").disabled = false;
+    }));
+  }
+
+  $("#btn-aula").addEventListener("click", () => {
+    if (!sitio) return;
+    const grupo = sitio.lado === "izquierda" ? C.GRUPO_IZQUIERDA : C.GRUPO_DERECHA;
+    const ins = C.INSTRUCCIONES_GRUPO[grupo];
+    $("#g-letra").textContent = grupo;
+    $("#g-accion").textContent = ins.sale ? "Sal del aula" : "Quédate en el aula";
+    $("#g-accion").className = "accion " + (ins.sale ? "sale" : "queda");
+    $("#g-texto").textContent = ins.texto;
+    mostrar("p-grupo");
+    if (!consiente) return;
+    Object.assign(D, { lado: sitio.lado, zona: sitio.fila <= 2 ? "delante" : sitio.fila >= 4 ? "detras" : "medio", fila: sitio.fila,
+      fila_global: sitio.fila,
+      grupo_asignado: grupo, fecha_fin: new Date().toISOString(),
+      movil: /Mobi|Android|iPhone/i.test(navigator.userAgent) ? 1 : 0 });
+    memoria.set("pre_hecho", { codigo: D.codigo, sesion: C.SESION });
+    enviar("pre", D, pintarEstado($("#estado")));
+  });
+
+  window.addEventListener("beforeunload", e => {
+    if ((memoria.get("cola") || []).length) { e.preventDefault(); e.returnValue = ""; }
+  });
+})();
+</script>
+</body>
+</html>
