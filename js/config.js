@@ -4,7 +4,7 @@
 window.CONFIG = {
   // 1. URL de la aplicación web de Google Apps Script (termina en /exec).
   //    Vacío = MODO PRUEBA: nada se envía; los datos se guardan solo en este navegador.
-  ENDPOINT: "https://script.google.com/macros/s/AKfycbyVQMq5lw875_TpDKS67eNr3VCmM4GsXhlGpxdOE2LYPu0PMlAEw7IHH8n9ot6DDEZp/exec",
+  ENDPOINT: "",
 
   // 2. Identificador de la sesión (cambiarlo cada curso o cada grupo de clase).
   SESION: "MDI-2026-cuasi-IE",

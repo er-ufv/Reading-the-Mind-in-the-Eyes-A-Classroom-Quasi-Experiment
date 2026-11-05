@@ -96,8 +96,9 @@ function actualizarDatos_() {
       k in pre ? 1 : 0, k in post ? 1 : 0];
   });
   const h = hoja_("Datos");
-  h.clearContents();
-  h.getRange(1, 1, 1, COLS_DATOS.length).setValues([COLS_DATOS]).setFontWeight("bold");
+  h.clear();   // borra valores y formato (incluida la fila de ejemplo de la plantilla)
+  h.getRange(1, 1, 1, COLS_DATOS.length).setValues([COLS_DATOS]).setFontWeight("bold").setFontColor("#FFFFFF").setBackground("#0047E8");
+  h.setFrozenRows(1);
   if (filas.length) h.getRange(2, 1, filas.length, COLS_DATOS.length).setValues(filas);
 }
 
