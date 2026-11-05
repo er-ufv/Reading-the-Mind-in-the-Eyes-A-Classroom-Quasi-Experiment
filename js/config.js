@@ -32,5 +32,5 @@ window.CONFIG = {
   ASIGNATURA: "Métodos y Diseños de Investigación",
   ACTIVIDAD: "Actividad en clase · Lectura de la mirada",
   RESPONSABLE: "el profesor de la asignatura",
-  CONTACTO: ""   // p. ej. "nombre.apellido@esic.university" (vacío = no se muestra)
+  CONTACTO: "eduarstiven.ramirez@esic.university"   // p. ej. "nombre.apellido@esic.university" (vacío = no se muestra)
 };
